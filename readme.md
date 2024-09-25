@@ -1,0 +1,80 @@
+
+# Assistant Vocal en Python
+
+Ce projet est un assistant vocal simple capable d'écouter des commandes, d'ouvrir des applications, de faire des recherches sur internet, et de répondre à certaines questions de base. Il se déclenche uniquement lorsque l'utilisateur dit "bonjour".
+
+## Prérequis
+
+Avant de pouvoir exécuter ce projet, vous devez installer Python et plusieurs bibliothèques nécessaires. Suivez les étapes ci-dessous pour configurer l'environnement.
+
+### 1. Installer Python
+
+Assurez-vous que Python 3.6 ou supérieur est installé sur votre machine. Vous pouvez le télécharger [ici](https://www.python.org/downloads/).
+
+### 2. Cloner le projet
+
+```bash
+git clone https://github.com/votre-repo/assistant-vocal.git
+cd assistant-vocal
+```
+
+### 3. Installer les dépendances
+
+Utilisez `pip` pour installer les bibliothèques Python nécessaires. Exécutez la commande suivante dans le répertoire du projet :
+
+```bash
+pip install pyttsx3 SpeechRecognition wikipedia webbrowser translate
+```
+
+### 4. Installation des bibliothèques système requises
+
+Certaines bibliothèques comme `pyttsx3` nécessitent des packages supplémentaires pour fonctionner, selon votre système d'exploitation.
+
+#### Windows
+- Vous n'avez rien à faire, toutes les dépendances seront installées via `pip`.
+
+#### Linux
+- Vous devrez installer des dépendances supplémentaires comme `espeak` et `ffmpeg` :
+
+```bash
+sudo apt-get install espeak ffmpeg libespeak1
+```
+
+#### macOS
+- Vous pouvez installer `brew` pour gérer les dépendances :
+
+```bash
+brew install espeak
+```
+
+## Utilisation
+
+Pour lancer l'assistant, exécutez simplement le fichier `assistant.py` 
+
+```bash
+python assistant.py
+```
+
+### Fonctionnalités disponibles
+
+- **Activation via un mot-clé** : L'assistant ne répondra qu'après avoir entendu "bonjour".
+- **Commandes disponibles** :
+  - Ouvrir des applications (ex: Notepad, Sublime Text, OBS).
+  - Rechercher sur YouTube, Google, ou Wikipédia.
+
+### Arrêter l'assistant
+
+Pour arrêter l'assistant, vous pouvez dire :
+- "arrête-toi"
+- "tais-toi"
+
+## Dépendances
+
+Voici les principales bibliothèques utilisées dans ce projet :
+
+- `pyttsx3` : Pour la synthèse vocale.
+- `SpeechRecognition` : Pour la reconnaissance vocale.
+- `wikipedia` : Pour les recherches sur Wikipédia.
+- `translate` : Pour traduire les requêtes et les résultats.
+- `webbrowser` : Pour ouvrir les pages web.
+
