@@ -23,7 +23,7 @@ cd assistant-vocal
 Utilisez `pip` pour installer les bibliothèques Python nécessaires. Exécutez la commande suivante dans le répertoire du projet :
 
 ```bash
-pip install pyttsx3 SpeechRecognition wikipedia webbrowser translate
+pip install pyttsx3 SpeechRecognition wikipedia webbrowser translate openai
 ```
 
 ### 4. Installation des bibliothèques système requises
@@ -77,4 +77,12 @@ Voici les principales bibliothèques utilisées dans ce projet :
 - `wikipedia` : Pour les recherches sur Wikipédia.
 - `translate` : Pour traduire les requêtes et les résultats.
 - `webbrowser` : Pour ouvrir les pages web.
+
+### 5. Configuration de l'API OpenAI
+
+Pour utiliser l'API GPT-3 d'OpenAI, vous devez obtenir une clé d'API et la configurer dans un fichier `.env`. Créez un fichier `.env` à la racine du projet et ajoutez votre clé d'API comme suit :
+
+OPENAI_API_KEY=YOUR_API_KEY
+
+``
 
