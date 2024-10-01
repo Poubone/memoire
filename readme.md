@@ -23,7 +23,7 @@ cd assistant-vocal
 Utilisez `pip` pour installer les bibliothèques Python nécessaires. Exécutez la commande suivante dans le répertoire du projet :
 
 ```bash
-pip install pyttsx3 SpeechRecognition  translate 
+pip install SpeechRecognition pyttsx3 huggingface-hub python-dotenv pygame
 ```
 
 ### 4. Installation des bibliothèques système requises
