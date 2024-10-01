@@ -1,14 +1,9 @@
 
 import os
-import time
 from urllib.request import urlopen
-
-from translate import Translator
 import speech_recognition as sr
 import pyttsx3
 import subprocess
-import webbrowser
-import wikipedia
 from huggingface_hub import InferenceClient
 from dotenv import load_dotenv  
 import pygame
@@ -132,38 +127,7 @@ def executer_script(nom_script):
     if not run_script(script_with_underscores):
         assistant_voix(f"Le script {script_with_underscores} est également introuvable.")
 
-# Fonction pour effectuer des recherches sur le net
-def sur_le_net(entree):
-    if entree != None:
-        if "youtube" in entree.lower(): 
-            indx = entree.lower().split().index("youtube") 
-            recherche = entree.lower().split()[indx + 1:]
-            if len(recherche) != 0:
-                assistant_voix("Recherche sur YouTube.")
-                webbrowser.open("http://www.youtube.com/results?search_query=" + "+".join(recherche), new=2)
-        elif "wikipédia" in entree.lower(): 
-            wikipedia.set_lang("fr")
-            try:
-                recherche = entree.lower().replace("cherche sur wikipédia", "")
-                if len(recherche) != 0:
-                    resultat = wikipedia.summary(recherche, sentences=1)
-                    assistant_voix("Recherche sur Wikipédia.")
-                    assistant_voix(resultat)
-            except:
-                assistant_voix("Désolé, aucune page trouvée.") 
-        else: 
-            if "google" in entree.lower():
-                indx = entree.lower().split().index("google") 
-                recherche = entree.lower().split()[indx + 1:]
-                if len(recherche) != 0:
-                    assistant_voix("Recherche sur Google.")
-                    webbrowser.open("https://www.google.com/search?q=" + "+".join(recherche), new=2)
-            elif "cherche" in entree.lower() or "recherche" in entree.lower():
-                indx = entree.lower().split().index("cherche") 
-                recherche = entree.lower().split()[indx + 1:]
-                if len(recherche) != 0:
-                    assistant_voix("Recherche par défaut.")
-                    webbrowser.open("https://www.google.com/search?q=" + "+".join(recherche), new=2)
+    
 
 # Fonction pour envoyer un prompt à l'API Hugging Face et récupérer la réponse
 def envoyer_prompt_huggingface(prompt):
@@ -193,7 +157,6 @@ def main():
     actif = False  # Le programme ne répond qu'une fois activé
     fermer = ["arrête-toi", "tais-toi"]
     ouvrir = ["ouvre", "ouvrir"]
-    cherche = ["cherche sur youtube", "cherche sur google", "cherche sur wikipédia", "cherche"]
     script = ["exécute le script", "lance le script", "exécute le programme", "lance le programme"] 
     ia_expressions = ["dis-moi", "donne-moi"]  # Expressions pour l'IA
 
@@ -215,10 +178,6 @@ def main():
                 for x in ouvrir:
                     if x in entree.lower():
                         application(entree)
-                        break
-                for x in cherche:
-                    if x in entree.lower():
-                        sur_le_net(entree)
                         break
                 for x in script:
                     if x in entree.lower():
