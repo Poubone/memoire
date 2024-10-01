@@ -23,7 +23,7 @@ cd assistant-vocal
 Utilisez `pip` pour installer les bibliothèques Python nécessaires. Exécutez la commande suivante dans le répertoire du projet :
 
 ```bash
-pip install SpeechRecognition pyttsx3 huggingface-hub python-dotenv pygame
+pip install SpeechRecognition pyttsx3 huggingface-hub python-dotenv pygame pywin32
 ```
 
 ### 4. Installation des bibliothèques système requises
@@ -60,7 +60,9 @@ python assistant.py
 - **Activation via un mot-clé** : L'assistant ne répondra qu'après avoir entendu "bonjour".
 - **Commandes disponibles** :
   - Ouvrir des applications (ex: Notepad, Sublime Text, OBS).
-  - Rechercher sur YouTube, Google, ou Wikipédia.
+  - Demander quelque chose à l'IA.
+  - Executer des scripts python.
+  - Executer un ping sur une adresse IP.
 
 ### Arrêter l'assistant
 
@@ -74,15 +76,19 @@ Voici les principales bibliothèques utilisées dans ce projet :
 
 - `pyttsx3` : Pour la synthèse vocale.
 - `SpeechRecognition` : Pour la reconnaissance vocale.
-- `wikipedia` : Pour les recherches sur Wikipédia.
-- `translate` : Pour traduire les requêtes et les résultats.
-- `webbrowser` : Pour ouvrir les pages web.
+- `huggingface-hub` : Pour utiliser l'API GPT-3 d'OpenAI.
+- `python-dotenv` : Pour charger les variables d'environnement à partir d'un fichier `.env`.
+- `pygame` : Pour jouer des sons.
+- `pywin32` : Pour exécuter des commandes système sur Windows.
 
 ### 5. Configuration de l'API OpenAI
 
-Pour utiliser l'API GPT-3 d'OpenAI, vous devez obtenir une clé d'API et la configurer dans un fichier `.env`. Créez un fichier `.env` à la racine du projet et ajoutez votre clé d'API comme suit :
+Pour utiliser l'API d'Hugging Face, vous devez obtenir une clé d'API et la configurer dans un fichier `.env`. Créez un fichier `.env` à la racine du projet et ajoutez votre clé d'API comme suit :
 
-OPENAI_API_KEY=YOUR_API_KEY
+HUGGING_FACE_API_KEY=YOUR_API_KEY
+URL_SERVEUR=YOUR_URL
+
+(Au besoin, un fichier .env.example est fourni)
 
 ``
 

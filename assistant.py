@@ -1,5 +1,7 @@
-
 import os
+import platform
+import threading
+import time
 from urllib.request import urlopen
 import speech_recognition as sr
 import pyttsx3
@@ -7,28 +9,36 @@ import subprocess
 from huggingface_hub import InferenceClient
 from dotenv import load_dotenv  
 import pygame
+import pythoncom
 
 
 # Charger les variables d'environnement du fichier .env
 load_dotenv()
 pygame.mixer.init()
 
-
-# Instanciation du client OpenAI avec la clé API
+# Instanciation du client Hugging Face avec la clé API
 HUGGING_FACE_API_KEY = os.getenv('HUGGING_FACE_API_KEY')
+URL_SERVEUR = os.getenv('URL_SERVEUR')
+
+# Variable globale pour contrôler l'état du thread de ping
+ping_active = False
+
+# Ajout d'un verrou pour les appels à pyttsx3 (le moteur vocal)
+voix_lock = threading.Lock()
 
 def jouer_son(string):
     pygame.mixer.music.load(string)  # Charger le fichier audio
     pygame.mixer.music.play()  # Jouer le fichier audio
 
-
-# Initialisation du moteur vocal
+# Initialisation du moteur vocal avec gestion des threads COM et utilisation du verrou
 def assistant_voix(sortie):
     if sortie != None:
-        voix = pyttsx3.init()
-        print("A.I : " + sortie)
-        voix.say(sortie)
-        voix.runAndWait()
+        with voix_lock:  # Protéger l'accès au moteur vocal avec un verrou
+            pythoncom.CoInitialize()  # Initialiser COM dans le thread secondaire (uniquement sous Windows)
+            voix = pyttsx3.init()
+            print("A.I : " + sortie)
+            voix.say(sortie)
+            voix.runAndWait()
 
 # Vérification de la connexion internet
 def internet():
@@ -40,20 +50,78 @@ def internet():
         print("Déconnecté")
         return False
 
+
+
+
+# Fonction pour ping l'URL
+def ping_serveur():
+    global ping_active
+    while ping_active:
+        try:
+            ping_command = get_ping_command()
+            output = subprocess.run(ping_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if output.returncode != 0:    
+                assistant_voix("Le serveur est down")
+        except Exception as e:
+            assistant_voix(f"Erreur lors du ping : {e}")
+        
+        time.sleep(30)  # Attendre 30 secondes avant de réessayer
+
+# Fonction pour adapter la commande de ping selon le système d'exploitation
+def get_ping_command():
+    system = platform.system()
+    if system == "Windows":
+        return ["ping", "-n", "1", URL_SERVEUR]
+    elif system == "Linux" or system == "Darwin":  # macOS est "Darwin"
+        return ["ping", "-c", "1", URL_SERVEUR]
+    else:
+        raise Exception(f"Système d'exploitation non pris en charge : {system}")
+
+
+# Thread de vérification du serveur
+def verifier_serveur_en_fond():
+    global ping_active
+    if not ping_active:
+        ping_active = True  # Activer le thread de ping
+        # Créer un thread séparé pour exécuter le ping en arrière-plan
+        thread = threading.Thread(target=ping_serveur)
+        thread.daemon = True  # Permet au thread de s'arrêter quand le programme principal se termine
+        thread.start()
+        assistant_voix("La vérification du serveur a commencé.")
+    else:
+        assistant_voix("La vérification du serveur est déjà en cours.")
+
+# Fonction pour arrêter la vérification du serveur
+def arreter_verification_serveur():
+    global ping_active
+    if ping_active:
+        ping_active = False  # Désactiver le thread de ping
+        assistant_voix("La vérification du serveur a été arrêtée.")
+    else:
+        assistant_voix("La vérification du serveur n'est pas en cours.")
+
+
+
+
 # Reconnaissance vocale avec gestion des erreurs appropriées
-def reconnaissance():
+def reconnaissance(actif):
     r = sr.Recognizer()
     r.energy_threshold = 4000
-    pas_compris = "Désolé, je n'ai pas compris."
     
     with sr.Microphone() as source:
         r.adjust_for_ambient_noise(source)
         r.pause_threshold = 0.7
-        jouer_son("parler.wav")  # Jouer le son pour indiquer que l'utilisateur peut parler
         
-        print("Vous pouvez parler maintenant...")  # Message facultatif pour le débogage
+        # Si l'assistant est activé, jouer les sons
+        if actif:
+            jouer_son("parler.wav")  # Jouer le son pour indiquer que l'utilisateur peut parler
+            print("Vous pouvez parler maintenant...")  # Message facultatif pour le débogage
+            
         audio = r.listen(source)
-        jouer_son("envoi.wav")  # Jouer le son pour indiquer que l'utilisateur peut parler
+        
+        # Si l'assistant est activé, jouer le son d'envoi
+        if actif:
+            jouer_son("envoi.wav")  # Jouer le son après l'enregistrement de la commande
 
         if internet():
             try:
@@ -61,16 +129,19 @@ def reconnaissance():
                 print(vocal)
                 return vocal
             except sr.UnknownValueError:
-                assistant_voix(pas_compris)
+                if actif:  # Si l'assistant est activé, seulement alors afficher ce message
+                    assistant_voix("Désolé, je n'ai pas compris.")
             except sr.RequestError as e:
-                assistant_voix(f"Erreur de service Google: {e}")
+                if actif:
+                    assistant_voix(f"Erreur de service Google: {e}")
         else:
             try:
                 vocal = r.recognize_sphinx(audio, language='fr-FR')
                 print(vocal)
                 return vocal
             except sr.UnknownValueError:
-                assistant_voix(pas_compris)
+                if actif:
+                    assistant_voix("Désolé, je n'ai pas compris.")
 
 # Fonction pour ouvrir des applications
 def application(entree):
@@ -99,7 +170,6 @@ def application(entree):
                     fini = True
             fini = True
 
-
 # Fonction pour exécuter des scripts externes
 def executer_script(nom_script):
     def run_script(script):
@@ -127,13 +197,9 @@ def executer_script(nom_script):
     if not run_script(script_with_underscores):
         assistant_voix(f"Le script {script_with_underscores} est également introuvable.")
 
-    
-
 # Fonction pour envoyer un prompt à l'API Hugging Face et récupérer la réponse
 def envoyer_prompt_huggingface(prompt):
-    client = InferenceClient(
-        token=HUGGING_FACE_API_KEY,
-    )
+    client = InferenceClient(token=HUGGING_FACE_API_KEY)
 
     try:
         # Utiliser le modèle pour répondre au prompt donné par l'utilisateur
@@ -152,17 +218,19 @@ def envoyer_prompt_huggingface(prompt):
         print(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
 
 def main():
-    assistant_voix("Bonjour monsieur, je suis votre assistant de bureau. Dîtes 'bonjour' pour activer mes services.")
+    
+    assistant_voix("Dîtes 'bonjour' pour activer mes services.")
     trigger_word = "bonjour"  # Le mot clé pour activer l'assistant
     actif = False  # Le programme ne répond qu'une fois activé
     fermer = ["arrête-toi", "tais-toi"]
     ouvrir = ["ouvre", "ouvrir"]
     script = ["exécute le script", "lance le script", "exécute le programme", "lance le programme"] 
-    ia_expressions = ["dis-moi", "donne-moi"]  # Expressions pour l'IA
-
-
+    ia_expressions = ["dis-moi", "donne-moi"] 
+    etat_serveur_start = ["vérifie l'état du serveur", "vérifier l'état du serveur"]  
+    etat_serveur_off = ["arrête de vérifier l'état du serveur", "arrête de ping le serveur"]  
+    
     while True:
-        entree = reconnaissance()  # On écoute l'utilisateur
+        entree = reconnaissance(actif)  # On écoute l'utilisateur
         if entree:
             # Activation de l'assistant seulement après avoir dit le mot clé
             if not actif and trigger_word in entree.lower():
@@ -191,6 +259,15 @@ def main():
                         prompt = entree.lower().replace(x, "").strip()  # Extrait le prompt après l'expression
                         envoyer_prompt_huggingface(prompt)  # Appelle l'IA avec le prompt
                         break
+                for x in etat_serveur_start:
+                    if x in entree.lower():
+                        verifier_serveur_en_fond()
+                        break
+                for x in etat_serveur_off:
+                    if x in entree.lower():
+                        arreter_verification_serveur()
+                        break
+                
 
 # Démarrage du programme
 if __name__ == '__main__':
