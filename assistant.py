@@ -217,12 +217,17 @@ def envoyer_prompt_huggingface(prompt):
         assistant_voix(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
         print(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
 
+
+
+
+
+
 def main():
     
     assistant_voix("Dîtes 'bonjour' pour activer mes services.")
     trigger_word = "bonjour"  # Le mot clé pour activer l'assistant
     actif = False  # Le programme ne répond qu'une fois activé
-    fermer = ["arrête-toi", "tais-toi"]
+    fermer = ["arrête-toi"]
     ouvrir = ["ouvre", "ouvrir"]
     script = ["exécute le script", "lance le script", "exécute le programme", "lance le programme"] 
     ia_expressions = ["dis-moi", "donne-moi"] 
