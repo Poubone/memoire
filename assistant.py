@@ -10,6 +10,7 @@ from huggingface_hub import InferenceClient
 from dotenv import load_dotenv  
 import pygame
 import pythoncom
+import paramiko
 
 
 # Charger les variables d'environnement du fichier .env
@@ -19,6 +20,8 @@ pygame.mixer.init()
 # Instanciation du client Hugging Face avec la clé API
 HUGGING_FACE_API_KEY = os.getenv('HUGGING_FACE_API_KEY')
 URL_SERVEUR = os.getenv('URL_SERVEUR')
+SSH_KEY_PATH = os.getenv('SSH_KEY_PATH')
+
 
 # Variable globale pour contrôler l'état du thread de ping
 ping_active = False
@@ -62,6 +65,10 @@ def ping_serveur():
             output = subprocess.run(ping_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if output.returncode != 0:    
                 assistant_voix("Le serveur est down")
+                arreter_verification_serveur()
+            else:
+                assistant_voix("Le serveur est up")
+                arreter_verification_serveur()
         except Exception as e:
             assistant_voix(f"Erreur lors du ping : {e}")
         
@@ -100,8 +107,57 @@ def arreter_verification_serveur():
     else:
         assistant_voix("La vérification du serveur n'est pas en cours.")
 
+def demarrer_apache():
+    try:
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        client.connect(hostname=URL_SERVEUR, username="memoire", key_filename=SSH_KEY_PATH)
+        assistant_voix('Connexion à la VM réussie')
+
+        command = "sudo systemctl start apache2"
+
+        stdin, stdout, stderr = client.exec_command(command)
+        stdout.channel.recv_exit_status()
+
+        stdin.write('\n')
+        stdin.flush()
+
+        print(stdout.read().decode())
+        print(stderr.read().decode())
+        assistant_voix("Apache a été démarré avec succès")
 
 
+    except Exception as e:
+        assistant_voix(f"Erreur de connexion SSH ou de commande : {e}")
+    finally:
+        client.close()
+
+def redemarrer_apache():
+    try:
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        client.connect(hostname="192.168.1.95", username="memoire", key_filename="C:/Users/gabin/.ssh/id_rsa")
+        assistant_voix('Connexion à la VM réussie')
+
+        command = "sudo systemctl restart apache2"
+
+        stdin, stdout, stderr = client.exec_command(command)
+        stdout.channel.recv_exit_status()
+
+        stdin.write('\n')
+        stdin.flush()
+
+        print(stdout.read().decode())
+        print(stderr.read().decode())
+        assistant_voix("Apache a été redémarré avec succès")
+
+
+    except Exception as e:
+        assistant_voix(f"Erreur de connexion SSH ou de commande : {e}")
+    finally:
+        client.close()
 
 # Reconnaissance vocale avec gestion des erreurs appropriées
 def reconnaissance(actif):
@@ -233,6 +289,8 @@ def main():
     ia_expressions = ["dis-moi", "donne-moi"] 
     etat_serveur_start = ["vérifie l'état du serveur", "vérifier l'état du serveur"]  
     etat_serveur_off = ["arrête de vérifier l'état du serveur", "arrête de ping le serveur"]  
+    demarrer_commande = ["lance apache", "lance le serveur web"]
+    redemarrer_commande = ["redémarre apache", "redémarre le serveur web"]  
     
     while True:
         entree = reconnaissance(actif)  # On écoute l'utilisateur
@@ -271,6 +329,15 @@ def main():
                 for x in etat_serveur_off:
                     if x in entree.lower():
                         arreter_verification_serveur()
+                        break
+                for x in demarrer_commande:
+                    if x in entree.lower():
+                        demarrer_apache()
+                        break
+                        
+                for x in redemarrer_commande:
+                    if x in entree.lower():
+                        redemarrer_apache()
                         break
                 
 
