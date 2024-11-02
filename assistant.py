@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 import pygame
 import pythoncom
 import paramiko
+import requests
 
 
 # Charger les variables d'environnement du fichier .env
@@ -52,8 +53,6 @@ def internet():
     except:
         print("Déconnecté")
         return False
-
-
 
 
 # Fonction pour ping l'URL
@@ -158,6 +157,38 @@ def redemarrer_apache():
         assistant_voix(f"Erreur de connexion SSH ou de commande : {e}")
     finally:
         client.close()
+
+def get_charge_cpu():
+    query = '100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)'
+    
+    response = requests.get(f"{URL_SERVEUR}:9090/api/v1/query", params={"query": query})
+
+    if response.status_code == 200:
+        result = response.json()
+        if result['status'] == 'success':
+            cpu_usage = int(float(result['data']['result'][0]['value'][1]))
+            assistant_voix(f"La charge du CPU est actuellement de {cpu_usage} pourcent")
+        else:
+            assistant_voix("Erreur lors de la requête Prometheus:")
+            print(result)
+    else:
+        print("Erreur lors de la connexion à Prometheus")
+
+def get_charge_memoire():
+    query = '(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100'
+    
+    response = requests.get(f"{URL_SERVEUR}:9090/api/v1/query", params={"query": query})
+
+    if response.status_code == 200:
+        result = response.json()
+        if result['status'] == 'success':
+            cpu_usage = int(float(result['data']['result'][0]['value'][1]))
+            assistant_voix(f"La mémoire est actuellement utilisée à {cpu_usage} pourcent")
+        else:
+            assistant_voix("Erreur lors de la requête Prometheus:")
+            print(result)
+    else:
+        print("Erreur lors de la connexion à Prometheus")
 
 # Reconnaissance vocale avec gestion des erreurs appropriées
 def reconnaissance(actif):
@@ -291,6 +322,8 @@ def main():
     etat_serveur_off = ["arrête de vérifier l'état du serveur", "arrête de ping le serveur"]  
     demarrer_commande = ["lance apache", "lance le serveur web"]
     redemarrer_commande = ["redémarre apache", "redémarre le serveur web"]  
+    charge_cpu = ["quelle est la charge CPU", "quelle est la charge du processeur"]
+    charge_memoire = ["quelle est la charge mémoire"]
     
     while True:
         entree = reconnaissance(actif)  # On écoute l'utilisateur
@@ -334,12 +367,18 @@ def main():
                     if x in entree.lower():
                         demarrer_apache()
                         break
-                        
                 for x in redemarrer_commande:
                     if x in entree.lower():
                         redemarrer_apache()
                         break
-                
+                for x in charge_cpu:
+                    if x in entree.lower():
+                        get_charge_cpu()
+                        break
+                for x in charge_memoire:
+                    if x in entree.lower():
+                        get_charge_memoire()
+                        break
 
 # Démarrage du programme
 if __name__ == '__main__':
