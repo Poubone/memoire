@@ -22,6 +22,7 @@ pygame.mixer.init()
 HUGGING_FACE_API_KEY = os.getenv('HUGGING_FACE_API_KEY')
 URL_SERVEUR = os.getenv('URL_SERVEUR')
 SSH_KEY_PATH = os.getenv('SSH_KEY_PATH')
+IP_SERVEUR = os.getenv('IP_SERVEUR')
 
 
 # Variable globale pour contrôler l'état du thread de ping
@@ -111,7 +112,7 @@ def demarrer_apache():
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        client.connect(hostname=URL_SERVEUR, username="memoire", key_filename=SSH_KEY_PATH)
+        client.connect(hostname=IP_SERVEUR, username="memoire", key_filename=SSH_KEY_PATH)
         assistant_voix('Connexion à la VM réussie')
 
         command = "sudo systemctl start apache2"
@@ -137,7 +138,7 @@ def redemarrer_apache():
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        client.connect(hostname="192.168.1.95", username="memoire", key_filename="C:/Users/gabin/.ssh/id_rsa")
+        client.connect(hostname=IP_SERVEUR, username="memoire", key_filename="C:/Users/gabin/.ssh/id_rsa")
         assistant_voix('Connexion à la VM réussie')
 
         command = "sudo systemctl restart apache2"
@@ -189,6 +190,41 @@ def get_charge_memoire():
             print(result)
     else:
         print("Erreur lors de la connexion à Prometheus")
+
+def check_apache_status():
+    try:
+        assistant_voix('Connexion à la VM en cours')
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        client.connect(hostname=IP_SERVEUR, username="memoire", key_filename="C:/Users/gabin/.ssh/id_rsa")
+        assistant_voix('Connexion à la VM réussie')
+
+        stdin, stdout, stderr = client.exec_command("systemctl is-active apache2")
+        status = stdout.read().decode().strip()
+
+        print(status)
+
+        if status == "active":
+            assistant_voix("Le serveur Apache est opérationnel")
+        else:
+            assistant_voix("Le serveur Apache est hors service, je vais récupérer les log.")
+
+            stdin, stdout, stderr = client.exec_command("sudo tail -n 10 /var/log/apache2/error.log")
+            error_logs = stdout.readlines()
+
+            assistant_voix("Voici les derniers log d'erreur")
+            
+            for log in error_logs:
+                print(log.strip())
+    except Exception as e:
+        assistant_voix(f"Erreur de connexion SSH ou de commande : {e}")
+    finally:
+        client.close()
+        assistant_voix("Fin de la connexion à la VM")
+
+
+
 
 # Reconnaissance vocale avec gestion des erreurs appropriées
 def reconnaissance(actif):
@@ -324,6 +360,7 @@ def main():
     redemarrer_commande = ["redémarre apache", "redémarre le serveur web"]  
     charge_cpu = ["quelle est la charge CPU", "quelle est la charge du processeur"]
     charge_memoire = ["quelle est la charge mémoire"]
+    apache_ok = ["vérifie si le serveur apache est ok", "est-ce que le serveur apache tourne correctement"]
     
     while True:
         entree = reconnaissance(actif)  # On écoute l'utilisateur
@@ -379,6 +416,11 @@ def main():
                     if x in entree.lower():
                         get_charge_memoire()
                         break
+                for x in apache_ok:
+                    if x in entree.lower():
+                        check_apache_status()
+                        break
+                    
 
 # Démarrage du programme
 if __name__ == '__main__':
