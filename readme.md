@@ -87,6 +87,8 @@ Pour utiliser l'API d'Hugging Face, vous devez obtenir une clé d'API et la conf
 
 HUGGING_FACE_API_KEY=YOUR_API_KEY
 URL_SERVEUR=YOUR_URL
+IP_SERVEUR=IP_DE_LA_VM
+SSH_KEY_PATH=CHEMIN_DE_LA_CLE_SSH
 
 (Au besoin, un fichier .env.example est fourni)
 
