@@ -50,59 +50,6 @@ def internet():
         print("Déconnecté")
         return False
 
-
-
-
-# Fonction pour ping l'URL
-def ping_serveur():
-    global ping_active
-    while ping_active:
-        try:
-            ping_command = get_ping_command()
-            output = subprocess.run(ping_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if output.returncode != 0:    
-                assistant_voix("Le serveur est down")
-        except Exception as e:
-            assistant_voix(f"Erreur lors du ping : {e}")
-        
-        time.sleep(30)  # Attendre 30 secondes avant de réessayer
-
-# Fonction pour adapter la commande de ping selon le système d'exploitation
-def get_ping_command():
-    system = platform.system()
-    if system == "Windows":
-        return ["ping", "-n", "1", URL_SERVEUR]
-    elif system == "Linux" or system == "Darwin":  # macOS est "Darwin"
-        return ["ping", "-c", "1", URL_SERVEUR]
-    else:
-        raise Exception(f"Système d'exploitation non pris en charge : {system}")
-
-
-# Thread de vérification du serveur
-def verifier_serveur_en_fond():
-    global ping_active
-    if not ping_active:
-        ping_active = True  # Activer le thread de ping
-        # Créer un thread séparé pour exécuter le ping en arrière-plan
-        thread = threading.Thread(target=ping_serveur)
-        thread.daemon = True  # Permet au thread de s'arrêter quand le programme principal se termine
-        thread.start()
-        assistant_voix("La vérification du serveur a commencé.")
-    else:
-        assistant_voix("La vérification du serveur est déjà en cours.")
-
-# Fonction pour arrêter la vérification du serveur
-def arreter_verification_serveur():
-    global ping_active
-    if ping_active:
-        ping_active = False  # Désactiver le thread de ping
-        assistant_voix("La vérification du serveur a été arrêtée.")
-    else:
-        assistant_voix("La vérification du serveur n'est pas en cours.")
-
-
-
-
 # Reconnaissance vocale avec gestion des erreurs appropriées
 def reconnaissance(actif):
     r = sr.Recognizer()
@@ -142,6 +89,55 @@ def reconnaissance(actif):
             except sr.UnknownValueError:
                 if actif:
                     assistant_voix("Désolé, je n'ai pas compris.")
+                    
+                    
+##### FONCTIONS SUPPLÉMENTAIRES #####
+
+# Fonction pour ping l'URL
+def ping_serveur():
+    global ping_active
+    while ping_active:
+        try:
+            ping_command = get_ping_command()
+            output = subprocess.run(ping_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if output.returncode != 0:    
+                assistant_voix("Le serveur est down")
+        except Exception as e:
+            assistant_voix(f"Erreur lors du ping : {e}")
+        
+        time.sleep(30)  # Attendre 30 secondes avant de réessayer
+
+# Fonction pour adapter la commande de ping selon le système d'exploitation
+def get_ping_command():
+    system = platform.system()
+    if system == "Windows":
+        return ["ping", "-n", "1", URL_SERVEUR]
+    elif system == "Linux" or system == "Darwin":  # macOS est "Darwin"
+        return ["ping", "-c", "1", URL_SERVEUR]
+    else:
+        raise Exception(f"Système d'exploitation non pris en charge : {system}")
+
+# Thread de vérification du serveur
+def verifier_serveur_en_fond():
+    global ping_active
+    if not ping_active:
+        ping_active = True  # Activer le thread de ping
+        # Créer un thread séparé pour exécuter le ping en arrière-plan
+        thread = threading.Thread(target=ping_serveur)
+        thread.daemon = True  # Permet au thread de s'arrêter quand le programme principal se termine
+        thread.start()
+        assistant_voix("La vérification du serveur a commencé.")
+    else:
+        assistant_voix("La vérification du serveur est déjà en cours.")
+
+# Fonction pour arrêter la vérification du serveur
+def arreter_verification_serveur():
+    global ping_active
+    if ping_active:
+        ping_active = False  # Désactiver le thread de ping
+        assistant_voix("La vérification du serveur a été arrêtée.")
+    else:
+        assistant_voix("La vérification du serveur n'est pas en cours.")
 
 # Fonction pour ouvrir des applications
 def application(entree):
@@ -173,7 +169,6 @@ def application(entree):
 # Fonction pour exécuter des scripts externes
 def executer_script(nom_script):
     def run_script(script):
-        """ Fonction interne pour exécuter un script avec gestion des erreurs """
         try:
             subprocess.run(['python', script], check=True)
             assistant_voix(f"Le script {script} a été exécuté avec succès.")
@@ -221,9 +216,7 @@ def envoyer_prompt_huggingface(prompt):
 
 
 
-
 def main():
-    
     assistant_voix("Dîtes 'bonjour' pour activer mes services.")
     trigger_word = "bonjour"  # Le mot clé pour activer l'assistant
     actif = False  # Le programme ne répond qu'une fois activé
