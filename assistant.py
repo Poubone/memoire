@@ -29,48 +29,48 @@ IP_SERVEUR = os.getenv('IP_SERVEUR')
 ping_active = False
 
 # Ajout d'un verrou pour les appels à pyttsx3 (le moteur vocal)
-voix_lock = threading.Lock()
+voice_lock = threading.Lock()
 
 def jouer_son(string):
     pygame.mixer.music.load(string)  # Charger le fichier audio
     pygame.mixer.music.play()  # Jouer le fichier audio
 
 # Initialisation du moteur vocal avec gestion des threads COM et utilisation du verrou
-def assistant_voix(sortie):
-    if sortie != None:
-        with voix_lock:  # Protéger l'accès au moteur vocal avec un verrou
+def assistant_voice(output):
+    if output != None:
+        with voice_lock:  # Protéger l'accès au moteur vocal avec un verrou
             pythoncom.CoInitialize()  # Initialiser COM dans le thread secondaire (uniquement sous Windows)
-            voix = pyttsx3.init()
-            print("A.I : " + sortie)
-            voix.say(sortie)
-            voix.runAndWait()
+            voice = pyttsx3.init()
+            print("A.I : " + output)
+            voice.say(output)
+            voice.runAndWait()
 
 # Vérification de la connexion internet
 def internet():
     try:
         urlopen('https://www.google.com', timeout=1)
-        print("Connecté")
+        print("Connected")
         return True
     except:
-        print("Déconnecté")
+        print("Disconnected")
         return False
 
 
 # Fonction pour ping l'URL
-def ping_serveur():
+def ping_server():
     global ping_active
     while ping_active:
         try:
             ping_command = get_ping_command()
             output = subprocess.run(ping_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if output.returncode != 0:    
-                assistant_voix("Le serveur est down")
+                assistant_voice("Le serveur est down")
                 arreter_verification_serveur()
             else:
-                assistant_voix("Le serveur est up")
+                assistant_voice("Le serveur est up")
                 arreter_verification_serveur()
         except Exception as e:
-            assistant_voix(f"Erreur lors du ping : {e}")
+            assistant_voice(f"Erreur lors du ping : {e}")
         
         time.sleep(30)  # Attendre 30 secondes avant de réessayer
 
@@ -86,7 +86,7 @@ def get_ping_command():
 
 
 # Thread de vérification du serveur
-def verifier_serveur_en_fond():
+def check_server_in_background():
     global ping_active
     if not ping_active:
         ping_active = True  # Activer le thread de ping
@@ -94,26 +94,26 @@ def verifier_serveur_en_fond():
         thread = threading.Thread(target=ping_serveur)
         thread.daemon = True  # Permet au thread de s'arrêter quand le programme principal se termine
         thread.start()
-        assistant_voix("La vérification du serveur a commencé.")
+        assistant_voice("La vérification du serveur a commencé.")
     else:
-        assistant_voix("La vérification du serveur est déjà en cours.")
+        assistant_voice("La vérification du serveur est déjà en cours.")
 
 # Fonction pour arrêter la vérification du serveur
-def arreter_verification_serveur():
+def stop_server_verification():
     global ping_active
     if ping_active:
         ping_active = False  # Désactiver le thread de ping
-        assistant_voix("La vérification du serveur a été arrêtée.")
+        assistant_voice("La vérification du serveur a été arrêtée.")
     else:
-        assistant_voix("La vérification du serveur n'est pas en cours.")
+        assistant_voice("La vérification du serveur n'est pas en cours.")
 
-def demarrer_apache():
+def start_apache():
     try:
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         client.connect(hostname=IP_SERVEUR, username="memoire", key_filename=SSH_KEY_PATH)
-        assistant_voix('Connexion à la VM réussie')
+        assistant_voice('Connexion à la VM réussie')
 
         command = "sudo systemctl start apache2"
 
@@ -125,21 +125,21 @@ def demarrer_apache():
 
         print(stdout.read().decode())
         print(stderr.read().decode())
-        assistant_voix("Apache a été démarré avec succès")
+        assistant_voice("Apache a été démarré avec succès")
 
 
     except Exception as e:
-        assistant_voix(f"Erreur de connexion SSH ou de commande : {e}")
+        assistant_voice(f"Erreur de connexion SSH ou de commande : {e}")
     finally:
         client.close()
 
-def redemarrer_apache():
+def restart_apache():
     try:
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         client.connect(hostname=IP_SERVEUR, username="memoire", key_filename="C:/Users/gabin/.ssh/id_rsa")
-        assistant_voix('Connexion à la VM réussie')
+        assistant_voice('Connexion à la VM réussie')
 
         command = "sudo systemctl restart apache2"
 
@@ -151,11 +151,11 @@ def redemarrer_apache():
 
         print(stdout.read().decode())
         print(stderr.read().decode())
-        assistant_voix("Apache a été redémarré avec succès")
+        assistant_voice("Apache a été redémarré avec succès")
 
 
     except Exception as e:
-        assistant_voix(f"Erreur de connexion SSH ou de commande : {e}")
+        assistant_voice(f"Erreur de connexion SSH ou de commande : {e}")
     finally:
         client.close()
 
@@ -168,9 +168,9 @@ def get_charge_cpu():
         result = response.json()
         if result['status'] == 'success':
             cpu_usage = int(float(result['data']['result'][0]['value'][1]))
-            assistant_voix(f"La charge du CPU est actuellement de {cpu_usage} pourcent")
+            assistant_voice(f"La charge du CPU est actuellement de {cpu_usage} pourcent")
         else:
-            assistant_voix("Erreur lors de la requête Prometheus:")
+            assistant_voice("Erreur lors de la requête Prometheus:")
             print(result)
     else:
         print("Erreur lors de la connexion à Prometheus")
@@ -184,21 +184,21 @@ def get_charge_memoire():
         result = response.json()
         if result['status'] == 'success':
             cpu_usage = int(float(result['data']['result'][0]['value'][1]))
-            assistant_voix(f"La mémoire est actuellement utilisée à {cpu_usage} pourcent")
+            assistant_voice(f"La mémoire est actuellement utilisée à {cpu_usage} pourcent")
         else:
-            assistant_voix("Erreur lors de la requête Prometheus:")
+            assistant_voice("Erreur lors de la requête Prometheus:")
             print(result)
     else:
         print("Erreur lors de la connexion à Prometheus")
 
 def check_apache_status():
     try:
-        assistant_voix('Connexion à la VM en cours')
+        assistant_voice('Connexion à la VM en cours')
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         client.connect(hostname=IP_SERVEUR, username="memoire", key_filename="C:/Users/gabin/.ssh/id_rsa")
-        assistant_voix('Connexion à la VM réussie')
+        assistant_voice('Connexion à la VM réussie')
 
         stdin, stdout, stderr = client.exec_command("systemctl is-active apache2")
         status = stdout.read().decode().strip()
@@ -206,28 +206,28 @@ def check_apache_status():
         print(status)
 
         if status == "active":
-            assistant_voix("Le serveur Apache est opérationnel")
+            assistant_voice("Le serveur Apache est opérationnel")
         else:
-            assistant_voix("Le serveur Apache est hors service, je vais récupérer les log.")
+            assistant_voice("Le serveur Apache est hors service, je vais récupérer les log.")
 
             stdin, stdout, stderr = client.exec_command("sudo tail -n 10 /var/log/apache2/error.log")
             error_logs = stdout.readlines()
 
-            assistant_voix("Voici les derniers log d'erreur")
+            assistant_voice("Voici les derniers log d'erreur")
             
             for log in error_logs:
                 print(log.strip())
     except Exception as e:
-        assistant_voix(f"Erreur de connexion SSH ou de commande : {e}")
+        assistant_voice(f"Erreur de connexion SSH ou de commande : {e}")
     finally:
         client.close()
-        assistant_voix("Fin de la connexion à la VM")
+        assistant_voice("Fin de la connexion à la VM")
 
 
 
 
 # Reconnaissance vocale avec gestion des erreurs appropriées
-def reconnaissance(actif):
+def reconnaissance(active):
     r = sr.Recognizer()
     r.energy_threshold = 4000
     
@@ -236,14 +236,14 @@ def reconnaissance(actif):
         r.pause_threshold = 0.7
         
         # Si l'assistant est activé, jouer les sons
-        if actif:
+        if active:
             jouer_son("parler.wav")  # Jouer le son pour indiquer que l'utilisateur peut parler
             print("Vous pouvez parler maintenant...")  # Message facultatif pour le débogage
             
         audio = r.listen(source)
         
         # Si l'assistant est activé, jouer le son d'envoi
-        if actif:
+        if active:
             jouer_son("envoi.wav")  # Jouer le son après l'enregistrement de la commande
 
         if internet():
@@ -252,72 +252,26 @@ def reconnaissance(actif):
                 print(vocal)
                 return vocal
             except sr.UnknownValueError:
-                if actif:  # Si l'assistant est activé, seulement alors afficher ce message
-                    assistant_voix("Désolé, je n'ai pas compris.")
+                if active:  # Si l'assistant est activé, seulement alors afficher ce message
+                    assistant_voice("Désolé, je n'ai pas compris.")
             except sr.RequestError as e:
-                if actif:
-                    assistant_voix(f"Erreur de service Google: {e}")
+                if active:
+                    assistant_voice(f"Erreur de service Google: {e}")
         else:
             try:
                 vocal = r.recognize_sphinx(audio, language='fr-FR')
                 print(vocal)
                 return vocal
             except sr.UnknownValueError:
-                if actif:
-                    assistant_voix("Désolé, je n'ai pas compris.")
+                if active:
+                    assistant_voice("Désolé, je n'ai pas compris.")
                     
                     
 ##### FONCTIONS SUPPLÉMENTAIRES #####
 
-# Fonction pour ping l'URL
-def ping_serveur():
-    global ping_active
-    while ping_active:
-        try:
-            ping_command = get_ping_command()
-            output = subprocess.run(ping_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if output.returncode != 0:    
-                assistant_voix("Le serveur est down")
-        except Exception as e:
-            assistant_voix(f"Erreur lors du ping : {e}")
-        
-        time.sleep(30)  # Attendre 30 secondes avant de réessayer
-
-# Fonction pour adapter la commande de ping selon le système d'exploitation
-def get_ping_command():
-    system = platform.system()
-    if system == "Windows":
-        return ["ping", "-n", "1", URL_SERVEUR]
-    elif system == "Linux" or system == "Darwin":  # macOS est "Darwin"
-        return ["ping", "-c", "1", URL_SERVEUR]
-    else:
-        raise Exception(f"Système d'exploitation non pris en charge : {system}")
-
-# Thread de vérification du serveur
-def verifier_serveur_en_fond():
-    global ping_active
-    if not ping_active:
-        ping_active = True  # Activer le thread de ping
-        # Créer un thread séparé pour exécuter le ping en arrière-plan
-        thread = threading.Thread(target=ping_serveur)
-        thread.daemon = True  # Permet au thread de s'arrêter quand le programme principal se termine
-        thread.start()
-        assistant_voix("La vérification du serveur a commencé.")
-    else:
-        assistant_voix("La vérification du serveur est déjà en cours.")
-
-# Fonction pour arrêter la vérification du serveur
-def arreter_verification_serveur():
-    global ping_active
-    if ping_active:
-        ping_active = False  # Désactiver le thread de ping
-        assistant_voix("La vérification du serveur a été arrêtée.")
-    else:
-        assistant_voix("La vérification du serveur n'est pas en cours.")
-
 # Fonction pour ouvrir des applications
-def application(entree):
-    if entree != None:
+def application(input):
+    if input != None:
         dico_apps = {
             "note": ["notepad", "note pad"],
             "sublime": ["sublime", "sublime texte"],
@@ -326,32 +280,32 @@ def application(entree):
         fini = False
         while not fini:
             for x in dico_apps["note"]:
-                if x in entree.lower():
-                    assistant_voix("Ouverture de Notepad.")
+                if x in input.lower():
+                    assistant_voice("Ouverture de Notepad.")
                     subprocess.Popen('C:\\Windows\\System32\\notepad.exe')
                     fini = True
             for x in dico_apps["sublime"]:
-                if x in entree.lower():
-                    assistant_voix("Ouverture de Sublime Text.")
+                if x in input.lower():
+                    assistant_voice("Ouverture de Sublime Text.")
                     subprocess.Popen('C:\\Program Files\\Sublime Text 3\\sublime_text.exe')
                     fini = True
             for x in dico_apps["obs"]:
-                if x in entree.lower():
-                    assistant_voix("Ouverture de OBS.")
+                if x in input.lower():
+                    assistant_voice("Ouverture de OBS.")
                     subprocess.Popen('C:\\Program Files\\obs-studio\\bin\\64bit\\obs64.exe')
                     fini = True
             fini = True
 
 # Fonction pour exécuter des scripts externes
-def executer_script(nom_script):
+def execute_script(nom_script):
     def run_script(script):
         try:
             subprocess.run(['python', script], check=True)
-            assistant_voix(f"Le script {script} a été exécuté avec succès.")
+            assistant_voice(f"Le script {script} a été exécuté avec succès.")
             return True  # Script exécuté avec succès
         except subprocess.CalledProcessError:
             # Ne pas vocaliser l'erreur technique, juste un message simple
-            assistant_voix(f"Il y a eu un problème lors de l'exécution du script {script}.")
+            assistant_voice(f"Il y a eu un problème lors de l'exécution du script {script}.")
             return False  # Erreur lors de l'exécution
         except FileNotFoundError:
             return False  # Le fichier n'a pas été trouvé
@@ -362,14 +316,14 @@ def executer_script(nom_script):
 
     # Si le fichier n'existe pas, on remplace les espaces par des underscores et réessaye
     script_with_underscores = nom_script.replace(" ", "_")
-    assistant_voix(f"Le script {nom_script} est introuvable. Essai avec {script_with_underscores} après correction.")
+    assistant_voice(f"Le script {nom_script} est introuvable. Essai avec {script_with_underscores} après correction.")
     
     # Deuxième tentative avec des underscores
     if not run_script(script_with_underscores):
-        assistant_voix(f"Le script {script_with_underscores} est également introuvable.")
+        assistant_voice(f"Le script {script_with_underscores} est également introuvable.")
 
 # Fonction pour envoyer un prompt à l'API Hugging Face et récupérer la réponse
-def envoyer_prompt_huggingface(prompt):
+def send_prompt_huggingface(prompt):
     client = InferenceClient(token=HUGGING_FACE_API_KEY)
 
     try:
@@ -382,10 +336,10 @@ def envoyer_prompt_huggingface(prompt):
 
         # Extraire la réponse du modèle
         generated_text = response.choices[0].message['content']
-        assistant_voix(generated_text)  # L'assistant vocalise la réponse
+        assistant_voice(generated_text)  # L'assistant vocalise la réponse
         return 
     except Exception as e:
-        assistant_voix(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
+        assistant_voice(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
         print(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
 
 
@@ -393,9 +347,9 @@ def envoyer_prompt_huggingface(prompt):
 
 
 def main():
-    assistant_voix("Dîtes 'bonjour' pour activer mes services.")
+    assistant_voice("Dîtes 'bonjour' pour activer mes services.")
     trigger_word = "bonjour"  # Le mot clé pour activer l'assistant
-    actif = False  # Le programme ne répond qu'une fois activé
+    active = False  # Le programme ne répond qu'une fois activé
     fermer = ["arrête-toi"]
     ouvrir = ["ouvre", "ouvrir"]
     script = ["exécute le script", "lance le script", "exécute le programme", "lance le programme"] 
@@ -409,18 +363,18 @@ def main():
     apache_ok = ["vérifie si le serveur apache est ok", "est-ce que le serveur apache tourne correctement"]
     
     while True:
-        entree = reconnaissance(actif)  # On écoute l'utilisateur
+        entree = reconnaissance(active)  # On écoute l'utilisateur
         if entree:
             # Activation de l'assistant seulement après avoir dit le mot clé
-            if not actif and trigger_word in entree.lower():
-                assistant_voix("Activation réussie, comment puis-je vous aider ?")
-                actif = True  # L'assistant est maintenant activé
-            elif actif:
+            if not active and trigger_word in entree.lower():
+                assistant_voice("Activation réussie, comment puis-je vous aider ?")
+                active = True  # L'assistant est maintenant activé
+            elif active:
                 # Si l'assistant est activé, traiter les autres commandes
                 for x in fermer:
                     if x in entree.lower():
-                        assistant_voix("À bientôt monsieur.")
-                        actif = False  # Désactivation après avoir dit "arrête-toi"
+                        assistant_voice("À bientôt monsieur.")
+                        active = False  # Désactivation après avoir dit "arrête-toi"
                         break
                 for x in ouvrir:
                     if x in entree.lower():
@@ -431,28 +385,28 @@ def main():
                         script_name = entree.lower().replace(x, "").strip()
                         if script_name:
                             script_name = script_name + ".py"  # Ajouter l'extension .py au nom du script
-                            executer_script(script_name)
+                            execute_script(script_name)
                         break
                 for x in ia_expressions:
                     if x in entree.lower():  # Vérifie si l'une des expressions IA est trouvée
                         prompt = entree.lower().replace(x, "").strip()  # Extrait le prompt après l'expression
-                        envoyer_prompt_huggingface(prompt)  # Appelle l'IA avec le prompt
+                        send_prompt_huggingface(prompt)  # Appelle l'IA avec le prompt
                         break
                 for x in etat_serveur_start:
                     if x in entree.lower():
-                        verifier_serveur_en_fond()
+                        check_server_in_background()
                         break
                 for x in etat_serveur_off:
                     if x in entree.lower():
-                        arreter_verification_serveur()
+                        stop_server_verification()
                         break
                 for x in demarrer_commande:
                     if x in entree.lower():
-                        demarrer_apache()
+                        start_apache()
                         break
                 for x in redemarrer_commande:
                     if x in entree.lower():
-                        redemarrer_apache()
+                        restart_apache()
                         break
                 for x in charge_cpu:
                     if x in entree.lower():
