@@ -215,8 +215,15 @@ def check_apache_status():
 
             assistant_voice("Voici les derniers log d'erreur")
             
+            f = open("logs.txt", "a")
+
             for log in error_logs:
+                f.write(log.strip())
                 print(log.strip())
+                
+            f.close()
+
+            
     except Exception as e:
         assistant_voice(f"Erreur de connexion SSH ou de commande : {e}")
     finally:
@@ -343,6 +350,22 @@ def send_prompt_huggingface(prompt):
         print(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
 
 
+def analyse_logs():
+    client = InferenceClient(token=HUGGING_FACE_API_KEY)
+    f = open("logs.txt", "r")
+
+    try:
+        response = client.chat_completion(
+            model="microsoft/Phi-3-mini-4k-instruct",  # Le modèle utilisé
+            messages=[{"role": "user", "content": "Analyse les logs et donne-moi les possibles solutions :"+f.read()}],
+            max_tokens=500
+        )
+        generated_text = response.choices[0].message['content']
+        assistant_voice(generated_text)  
+        return 
+    except Exception as e:
+        assistant_voice(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
+        print(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
 
 
 
@@ -361,6 +384,8 @@ def main():
     charge_cpu = ["quelle est la charge CPU", "quelle est la charge du processeur"]
     charge_memoire = ["quelle est la charge mémoire"]
     apache_ok = ["vérifie si le serveur apache est ok", "est-ce que le serveur apache tourne correctement"]
+    ia_answer_logs = ["analyse les logs"]
+
     
     while True:
         entree = reconnaissance(active)  # On écoute l'utilisateur
@@ -419,6 +444,10 @@ def main():
                 for x in apache_ok:
                     if x in entree.lower():
                         check_apache_status()
+                        break
+                for x in ia_answer_logs:
+                    if x in entree.lower():
+                        analyse_logs()
                         break
                     
 

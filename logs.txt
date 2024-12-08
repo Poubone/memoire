@@ -1,0 +1,10 @@
+[Sun Dec 08 14:35:10.123456 2024] [core:warn] [pid 1234] AH00111: Config variable ${FOO} is not defined
+[Sun Dec 08 14:35:11.789012 2024] [authz_core:error] [pid 1235] [client 192.168.1.100:53210] AH01630: client denied by server configuration: /var/www/html/private/
+[Sun Dec 08 14:35:12.345678 2024] [mpm_prefork:notice] [pid 5678] AH00170: caught SIGWINCH, shutting down gracefully
+[Sun Dec 08 14:35:13.456789 2024] [proxy:error] [pid 1236] (111)Connection refused: AH00957: HTTP: attempt to connect to 127.0.0.1:8080 (backend) failed
+[Sun Dec 08 14:35:14.567890 2024] [proxy_http:error] [pid 1236] [client 192.168.1.101:58274] AH01114: HTTP: failed to make connection to backend: 127.0.0.1
+[Sun Dec 08 14:35:15.678901 2024] [ssl:warn] [pid 1237] AH01906: RSA server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Sun Dec 08 14:35:16.789012 2024] [ssl:error] [pid 1237] AH02032: Hostname www.example.com provided via SNI and hostname example.com provided via HTTP are different
+[Sun Dec 08 14:35:17.890123 2024] [core:error] [pid 1238] [client 192.168.1.102:60123] AH00037: Symbolic link not allowed or link target not accessible: /var/www/html/symlink
+[Sun Dec 08 14:35:18.901234 2024] [cgi:error] [pid 1239] [client 192.168.1.103:61234] AH01215: /usr/bin/php: Permission denied
+[Sun Dec 08 14:35:19.012345 2024] [negotiation:error] [pid 1240] [client 192.168.1.104:62345] AH00687: Negotiation: discovered file(s) matching request: /var/www/html/index (None could be negotiated)
