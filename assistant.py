@@ -65,10 +65,10 @@ def ping_server():
             output = subprocess.run(ping_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if output.returncode != 0:    
                 assistant_voice("Le serveur est down")
-                arreter_verification_serveur()
+                stop_server_verification()
             else:
                 assistant_voice("Le serveur est up")
-                arreter_verification_serveur()
+                check_server_in_background()
         except Exception as e:
             assistant_voice(f"Erreur lors du ping : {e}")
         
@@ -91,7 +91,7 @@ def check_server_in_background():
     if not ping_active:
         ping_active = True  # Activer le thread de ping
         # Créer un thread séparé pour exécuter le ping en arrière-plan
-        thread = threading.Thread(target=ping_serveur)
+        thread = threading.Thread(target=ping_server)
         thread.daemon = True  # Permet au thread de s'arrêter quand le programme principal se termine
         thread.start()
         assistant_voice("La vérification du serveur a commencé.")
@@ -350,14 +350,14 @@ def main():
     assistant_voice("Dîtes 'bonjour' pour activer mes services.")
     trigger_word = "bonjour"  # Le mot clé pour activer l'assistant
     active = False  # Le programme ne répond qu'une fois activé
-    fermer = ["arrête-toi"]
-    ouvrir = ["ouvre", "ouvrir"]
+    close = ["arrête-toi"]
+    open = ["ouvre", "ouvrir"]
     script = ["exécute le script", "lance le script", "exécute le programme", "lance le programme"] 
     ia_expressions = ["dis-moi", "donne-moi"] 
-    etat_serveur_start = ["vérifie l'état du serveur", "vérifier l'état du serveur"]  
-    etat_serveur_off = ["arrête de vérifier l'état du serveur", "arrête de ping le serveur"]  
-    demarrer_commande = ["lance apache", "lance le serveur web"]
-    redemarrer_commande = ["redémarre apache", "redémarre le serveur web"]  
+    state_server_start = ["vérifie l'état du serveur", "vérifier l'état du serveur"]  
+    state_server_off = ["arrête de vérifier l'état du serveur", "arrête de ping le serveur"]  
+    start_command_server = ["lance apache", "lance le serveur web"]
+    restart_commande_server = ["redémarre apache", "redémarre le serveur web"]  
     charge_cpu = ["quelle est la charge CPU", "quelle est la charge du processeur"]
     charge_memoire = ["quelle est la charge mémoire"]
     apache_ok = ["vérifie si le serveur apache est ok", "est-ce que le serveur apache tourne correctement"]
@@ -371,12 +371,12 @@ def main():
                 active = True  # L'assistant est maintenant activé
             elif active:
                 # Si l'assistant est activé, traiter les autres commandes
-                for x in fermer:
+                for x in close:
                     if x in entree.lower():
                         assistant_voice("À bientôt monsieur.")
                         active = False  # Désactivation après avoir dit "arrête-toi"
                         break
-                for x in ouvrir:
+                for x in open:
                     if x in entree.lower():
                         application(entree)
                         break
@@ -392,19 +392,19 @@ def main():
                         prompt = entree.lower().replace(x, "").strip()  # Extrait le prompt après l'expression
                         send_prompt_huggingface(prompt)  # Appelle l'IA avec le prompt
                         break
-                for x in etat_serveur_start:
+                for x in state_server_start:
                     if x in entree.lower():
                         check_server_in_background()
                         break
-                for x in etat_serveur_off:
+                for x in state_server_off:
                     if x in entree.lower():
                         stop_server_verification()
                         break
-                for x in demarrer_commande:
+                for x in start_command_server:
                     if x in entree.lower():
                         start_apache()
                         break
-                for x in redemarrer_commande:
+                for x in restart_commande_server:
                     if x in entree.lower():
                         restart_apache()
                         break
