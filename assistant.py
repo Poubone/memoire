@@ -112,6 +112,8 @@ def start_apache():
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+        print((IP_SERVEUR))
+
         client.connect(hostname=IP_SERVEUR, username="memoire", key_filename=SSH_KEY_PATH)
         assistant_voice('Connexion à la VM réussie')
 
@@ -159,7 +161,7 @@ def restart_apache():
     finally:
         client.close()
 
-def get_charge_cpu():
+def get_cpu_load():
     query = '100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)'
     
     response = requests.get(f"{URL_SERVEUR}:9090/api/v1/query", params={"query": query})
@@ -175,7 +177,7 @@ def get_charge_cpu():
     else:
         print("Erreur lors de la connexion à Prometheus")
 
-def get_charge_memoire():
+def get_memory_load():
     query = '(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100'
     
     response = requests.get(f"{URL_SERVEUR}:9090/api/v1/query", params={"query": query})
@@ -380,9 +382,9 @@ def main():
     state_server_start = ["vérifie l'état du serveur", "vérifier l'état du serveur"]  
     state_server_off = ["arrête de vérifier l'état du serveur", "arrête de ping le serveur"]  
     start_command_server = ["lance apache", "lance le serveur web"]
-    restart_commande_server = ["redémarre apache", "redémarre le serveur web"]  
-    charge_cpu = ["quelle est la charge CPU", "quelle est la charge du processeur"]
-    charge_memoire = ["quelle est la charge mémoire"]
+    restart_command_server = ["redémarre apache", "redémarre le serveur web"]  
+    cpu_load = ["quelle est la charge CPU", "quelle est la charge du processeur"]
+    memory_load = ["quelle est la charge mémoire"]
     apache_ok = ["vérifie si le serveur apache est ok", "est-ce que le serveur apache tourne correctement"]
     ia_answer_logs = ["analyse les logs"]
 
@@ -429,17 +431,17 @@ def main():
                     if x in entree.lower():
                         start_apache()
                         break
-                for x in restart_commande_server:
+                for x in restart_command_server:
                     if x in entree.lower():
                         restart_apache()
                         break
-                for x in charge_cpu:
+                for x in cpu_load:
                     if x in entree.lower():
-                        get_charge_cpu()
+                        get_cpu_load()
                         break
-                for x in charge_memoire:
+                for x in memory_load:
                     if x in entree.lower():
-                        get_charge_memoire()
+                        get_memory_load()
                         break
                 for x in apache_ok:
                     if x in entree.lower():
