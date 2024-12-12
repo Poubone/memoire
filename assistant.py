@@ -217,7 +217,7 @@ def check_apache_status():
 
             assistant_voice("Voici les derniers log d'erreur")
             
-            f = open("logs.txt", "a")
+            f = open("logs.txt", "w")
 
             for log in error_logs:
                 f.write(log.strip())
