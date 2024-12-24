@@ -69,6 +69,8 @@ def recognition(active):
 def main():
     assistant_voice("Dîtes 'bonjour' pour activer mes services.")
     trigger_word = "bonjour"  
+    close = ["arrête-toi"]
+
     active = False  
     while True:
         input = recognition(active) 
@@ -77,7 +79,11 @@ def main():
                 assistant_voice("Activation réussie, comment puis-je vous aider ?")
                 active = True  
             elif active :
-		            assistant_voice(input)
+                for x in close :
+                    if x in input.lower():
+                        assistant_voice("À bientôt monsieur.")
+                        active = False  
+                        break
 
 
 if __name__ == '__main__':
