@@ -97,12 +97,31 @@ def application(input):
                     ended = True
             ended = True       
 
+def execute_script(script_name):
+    def run_script(script):        
+        try:
+            subprocess.run(['python', script], check=True)
+            assistant_voice(f"Le script {script} a été exécuté avec succès.")
+            return True  
+        except subprocess.CalledProcessError:
+            assistant_voice(f"Il y a eu un problème lors de l'exécution du script {script}.")
+            return False  
+        except FileNotFoundError:
+            return False  
+    if run_script(script_name):
+        return  
+    script_with_underscores = script_name.replace(" ", "_")
+    assistant_voice(f"Le script {script_name} est introuvable. Essai avec {script_with_underscores} après correction.")
+    
+    if not run_script(script_with_underscores):
+        assistant_voice(f"Le script {script_with_underscores} est également introuvable.")
                     
 def main():
     assistant_voice("Dîtes 'bonjour' pour activer mes services.")
     trigger_word = "bonjour"  
     close = ["arrête-toi"]
     open = ["ouvre", "ouvrir"]        
+    script = ["exécute le script", "lance le script", "exécute le programme", "lance le programme"] 
 
     active = False  
     while True:
@@ -121,6 +140,13 @@ def main():
                     if x in input.lower():
                         application(input)
                         break       
+                for x in script:
+                    if x in input.lower():
+                        script_name = input.lower().replace(x, "").strip()
+                        if script_name:
+                            script_name = script_name + ".py"  # Ajouter l'extension .py au nom du script
+                            execute_script(script_name)
+                        break
 
 
 if __name__ == '__main__':
