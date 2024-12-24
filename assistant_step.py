@@ -2,6 +2,8 @@ import pyttsx3
 from urllib.request import urlopen
 import speech_recognition as sr
 import pygame
+import subprocess
+
 
 
 pygame.mixer.init()
@@ -28,6 +30,7 @@ def internet():
     except:
         print("Déconnecté")
         return False
+
 
 
 def recognition(active):
@@ -66,10 +69,40 @@ def recognition(active):
                 if active:
                     assistant_voice("Désolé, je n'ai pas compris.")
                     
+                    
+                    
+def application(input):
+    if input!= None:
+        dico_apps = {
+            "note": ["notepad", "note pad"],
+            "sublime": ["sublime", "sublime texte"],
+            "obs": ["obs", "obs capture", "capture l'écran"],
+        }
+        ended = False
+        while not ended :
+            for x in dico_apps["note"]:
+                if x in input.lower():
+                    assistant_voice("Ouverture de Notepad.")
+                    subprocess.Popen('C:\\Windows\\System32\\notepad.exe')
+                    ended  = True
+            for x in dico_apps["sublime"]:
+                if x in input.lower():
+                    assistant_voice("Ouverture de Sublime Text.")
+                    subprocess.Popen('C:\\Program Files\\Sublime Text 3\\sublime_text.exe')
+                    ended = True
+            for x in dico_apps["obs"]:
+                if x in input.lower():
+                    assistant_voice("Ouverture de OBS.")
+                    subprocess.Popen('C:\\Program Files\\obs-studio\\bin\\64bit\\obs64.exe')
+                    ended = True
+            ended = True       
+
+                    
 def main():
     assistant_voice("Dîtes 'bonjour' pour activer mes services.")
     trigger_word = "bonjour"  
     close = ["arrête-toi"]
+    open = ["ouvre", "ouvrir"]        
 
     active = False  
     while True:
@@ -84,6 +117,10 @@ def main():
                         assistant_voice("À bientôt monsieur.")
                         active = False  
                         break
+                for x in open :
+                    if x in input.lower():
+                        application(input)
+                        break       
 
 
 if __name__ == '__main__':
