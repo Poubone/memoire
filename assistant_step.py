@@ -7,12 +7,15 @@ import subprocess
 import threading
 import platform
 import time
+import paramiko
 
 
 
 pygame.mixer.init()
 
 URL_SERVEUR = os.getenv('URL_SERVEUR')
+IP_SERVEUR = os.getenv('IP_SERVEUR')
+SSH_KEY_PATH = os.getenv('SSH_KEY_PATH')
 
 def play_sound(string):
     pygame.mixer.music.load(string) 
@@ -83,6 +86,60 @@ def stop_server_verification():
         assistant_voice("La vérification du serveur a été arrêtée.")
     else:
         assistant_voice("La vérification du serveur n'est pas en cours.")
+
+def start_apache():
+    try:
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        print((IP_SERVEUR))
+
+        client.connect(hostname=IP_SERVEUR, username="memoire", key_filename=SSH_KEY_PATH)
+        assistant_voice('Connexion à la VM réussie')
+
+        command = "sudo systemctl start apache2"
+
+        stdin, stdout, stderr = client.exec_command(command)
+        stdout.channel.recv_exit_status()
+
+        stdin.write('\n')
+        stdin.flush()
+
+        print(stdout.read().decode())
+        print(stderr.read().decode())
+        assistant_voice("Apache a été démarré avec succès")
+
+
+    except Exception as e:
+        assistant_voice(f"Erreur de connexion SSH ou de commande : {e}")
+    finally:
+        client.close()
+
+def restart_apache():
+    try:
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        client.connect(hostname=IP_SERVEUR, username="memoire", key_filename="C:/Users/gabin/.ssh/id_rsa")
+        assistant_voice('Connexion à la VM réussie')
+
+        command = "sudo systemctl restart apache2"
+
+        stdin, stdout, stderr = client.exec_command(command)
+        stdout.channel.recv_exit_status()
+
+        stdin.write('\n')
+        stdin.flush()
+
+        print(stdout.read().decode())
+        print(stderr.read().decode())
+        assistant_voice("Apache a été redémarré avec succès")
+
+
+    except Exception as e:
+        assistant_voice(f"Erreur de connexion SSH ou de commande : {e}")
+    finally:
+        client.close()
 
 def recognition(active):
     r = sr.Recognizer()
@@ -175,6 +232,8 @@ def main():
     script = ["exécute le script", "lance le script", "exécute le programme", "lance le programme"] 
     state_server_start = ["vérifie l'état du serveur", "vérifier l'état du serveur"]  
     state_server_off = ["arrête de vérifier l'état du serveur", "arrête de ping le serveur"]  
+    start_command_server = ["lance apache", "lance le serveur web"]
+    restart_command_server = ["redémarre apache", "redémarre le serveur web"]  
 
     active = False  
     while True:
@@ -207,6 +266,14 @@ def main():
                 for x in state_server_off:
                     if x in input.lower():
                         stop_server_verification()
+                        break
+                for x in start_command_server:
+                    if x in input.lower():
+                        start_apache()
+                        break
+                for x in restart_command_server:
+                    if x in input.lower():
+                        restart_apache()
                         break
 
 
