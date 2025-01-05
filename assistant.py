@@ -23,7 +23,17 @@ HUGGING_FACE_API_KEY = os.getenv('HUGGING_FACE_API_KEY')
 URL_SERVEUR = os.getenv('URL_SERVEUR')
 SSH_KEY_PATH = os.getenv('SSH_KEY_PATH')
 IP_SERVEUR = os.getenv('IP_SERVEUR')
+GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
+REPO_OWNER = os.getenv('REPO_OWNER')
+REPO_NAME = os.getenv('REPO_NAME')
 
+#URL de l'API pour recuperer les pull requests
+url = f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/pulls'
+
+headers = {
+    'Authorization': f'token {GITHUB_TOKEN}',
+    'Accept': 'application/vnd.github.v3+json',
+}
 
 # Variable globale pour contrôler l'état du thread de ping
 ping_active = False
@@ -369,7 +379,27 @@ def analyse_logs():
         assistant_voice(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
         print(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
 
+def get_pull_requests(): 
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f'Erreur lors de la récuperation des pull requests')
+        return []
 
+def git_interaction():
+    pull_requests = get_pull_requests()
+    if not pull_requests:
+        assistant_voice(f"Aucune pull request n'est trouvée.")
+        print(f"Aucune pull request n'est trouvée.")
+        return
+    pr_numbers = len(pull_requests)
+    message_pull_request = f"Il y as {pr_numbers} de nouvelles pull requests, "
+    for index, pr in enumerate(pull_requests):
+        message_pull_request += f"Pull request numéro {index + 1} : {pr["title"]}"
+
+    assistant_voice(message_pull_request)
+    print(message_pull_request)
 
 def main():
     assistant_voice("Dîtes 'bonjour' pour activer mes services.")
@@ -387,6 +417,7 @@ def main():
     memory_load = ["quelle est la charge mémoire"]
     apache_ok = ["vérifie si le serveur apache est ok", "est-ce que le serveur apache tourne correctement"]
     ia_answer_logs = ["analyse les logs"]
+    ask_pr = ["montre-moi les pull request", "y'as-t-il de nouvelles pull request sur mon projet"]
 
     
     while True:
@@ -450,6 +481,10 @@ def main():
                 for x in ia_answer_logs:
                     if x in entree.lower():
                         analyse_logs()
+                        break
+                for x in ask_pr:
+                    if x in entree.lower():
+                        git_interaction()
                         break
                     
 
