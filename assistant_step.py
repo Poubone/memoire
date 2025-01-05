@@ -9,11 +9,14 @@ import platform
 import time
 import paramiko
 import requests
+from huggingface_hub import InferenceClient
+
 
 
 
 pygame.mixer.init()
 
+HUGGING_FACE_API_KEY = os.getenv('HUGGING_FACE_API_KEY')
 URL_SERVEUR = os.getenv('URL_SERVEUR')
 IP_SERVEUR = os.getenv('IP_SERVEUR')
 SSH_KEY_PATH = os.getenv('SSH_KEY_PATH')
@@ -296,6 +299,24 @@ def execute_script(script_name):
     
     if not run_script(script_with_underscores):
         assistant_voice(f"Le script {script_with_underscores} est également introuvable.")
+        
+        
+def analyse_logs():
+    client = InferenceClient(token=HUGGING_FACE_API_KEY)
+    f = open("logs.txt", "r")
+
+    try:
+        response = client.chat_completion(
+            model="microsoft/Phi-3-mini-4k-instruct",  # Le modèle utilisé
+            messages=[{"role": "user", "content": "Analyse les logs et donne-moi les possibles solutions :"+f.read()}],
+            max_tokens=500
+        )
+        generated_text = response.choices[0].message['content']
+        assistant_voice(generated_text)  
+        return 
+    except Exception as e:
+        assistant_voice(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
+        print(f"Erreur lors de l'appel à l'API Hugging Face : {e}")
                     
 def main():
     assistant_voice("Dîtes 'bonjour' pour activer mes services.")
@@ -310,6 +331,8 @@ def main():
     cpu_load = ["quelle est la charge CPU", "quelle est la charge du processeur"]
     memory_load = ["quelle est la charge mémoire"]
     apache_ok = ["vérifie si le serveur apache est ok", "est-ce que le serveur apache tourne correctement"]
+    ia_answer_logs = ["analyse les logs"]
+
 
     active = False  
     while True:
@@ -362,6 +385,10 @@ def main():
                 for x in apache_ok:
                     if x in input.lower():
                         check_apache_status()
+                        break
+                for x in ia_answer_logs:
+                    if x in input.lower():
+                        analyse_logs()
                         break
 
 
