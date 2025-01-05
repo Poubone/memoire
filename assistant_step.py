@@ -174,6 +174,46 @@ def get_memory_load():
     else:
         print("Erreur lors de la connexion à Prometheus")
 
+def check_apache_status():
+    try:
+        assistant_voice('Connexion à la VM en cours')
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        client.connect(hostname=IP_SERVEUR, username="memoire", key_filename="C:/Users/gabin/.ssh/id_rsa")
+        assistant_voice('Connexion à la VM réussie')
+
+        stdin, stdout, stderr = client.exec_command("systemctl is-active apache2")
+        status = stdout.read().decode().strip()
+
+        print(status)
+
+        if status == "active":
+            assistant_voice("Le serveur Apache est opérationnel")
+        else:
+            assistant_voice("Le serveur Apache est hors service, je vais récupérer les log.")
+
+            stdin, stdout, stderr = client.exec_command("sudo tail -n 10 /var/log/apache2/error.log")
+            error_logs = stdout.readlines()
+
+            assistant_voice("Voici les derniers log d'erreur")
+            
+            f = open("logs.txt", "w")
+
+            for log in error_logs:
+                f.write(log.strip())
+                print(log.strip())
+                
+            f.close()
+
+            
+    except Exception as e:
+        assistant_voice(f"Erreur de connexion SSH ou de commande : {e}")
+    finally:
+        client.close()
+        assistant_voice("Fin de la connexion à la VM")
+
+
 def recognition(active):
     r = sr.Recognizer()
     r.energy_threshold = 4000
@@ -269,6 +309,7 @@ def main():
     restart_command_server = ["redémarre apache", "redémarre le serveur web"]  
     cpu_load = ["quelle est la charge CPU", "quelle est la charge du processeur"]
     memory_load = ["quelle est la charge mémoire"]
+    apache_ok = ["vérifie si le serveur apache est ok", "est-ce que le serveur apache tourne correctement"]
 
     active = False  
     while True:
@@ -317,6 +358,10 @@ def main():
                 for x in memory_load:
                     if x in input.lower():
                         get_memory_load()
+                        break
+                for x in apache_ok:
+                    if x in input.lower():
+                        check_apache_status()
                         break
 
 
