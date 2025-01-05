@@ -8,6 +8,7 @@ import threading
 import platform
 import time
 import paramiko
+import requests
 
 
 
@@ -141,6 +142,38 @@ def restart_apache():
     finally:
         client.close()
 
+def get_cpu_load():
+    query = '100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)'
+    
+    response = requests.get(f"{URL_SERVEUR}:9090/api/v1/query", params={"query": query})
+
+    if response.status_code == 200:
+        result = response.json()
+        if result['status'] == 'success':
+            cpu_usage = int(float(result['data']['result'][0]['value'][1]))
+            assistant_voice(f"La charge du CPU est actuellement de {cpu_usage} pourcent")
+        else:
+            assistant_voice("Erreur lors de la requête Prometheus:")
+            print(result)
+    else:
+        print("Erreur lors de la connexion à Prometheus")
+
+def get_memory_load():
+    query = '(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100'
+    
+    response = requests.get(f"{URL_SERVEUR}:9090/api/v1/query", params={"query": query})
+
+    if response.status_code == 200:
+        result = response.json()
+        if result['status'] == 'success':
+            cpu_usage = int(float(result['data']['result'][0]['value'][1]))
+            assistant_voice(f"La mémoire est actuellement utilisée à {cpu_usage} pourcent")
+        else:
+            assistant_voice("Erreur lors de la requête Prometheus:")
+            print(result)
+    else:
+        print("Erreur lors de la connexion à Prometheus")
+
 def recognition(active):
     r = sr.Recognizer()
     r.energy_threshold = 4000
@@ -234,6 +267,8 @@ def main():
     state_server_off = ["arrête de vérifier l'état du serveur", "arrête de ping le serveur"]  
     start_command_server = ["lance apache", "lance le serveur web"]
     restart_command_server = ["redémarre apache", "redémarre le serveur web"]  
+    cpu_load = ["quelle est la charge CPU", "quelle est la charge du processeur"]
+    memory_load = ["quelle est la charge mémoire"]
 
     active = False  
     while True:
@@ -274,6 +309,14 @@ def main():
                 for x in restart_command_server:
                     if x in input.lower():
                         restart_apache()
+                        break
+                for x in cpu_load:
+                    if x in input.lower():
+                        get_cpu_load()
+                        break
+                for x in memory_load:
+                    if x in input.lower():
+                        get_memory_load()
                         break
 
 
