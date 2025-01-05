@@ -1,19 +1,22 @@
+import os
 import pyttsx3
 from urllib.request import urlopen
 import speech_recognition as sr
 import pygame
 import subprocess
+import threading
+import platform
+import time
 
 
 
 pygame.mixer.init()
 
-
+URL_SERVEUR = os.getenv('URL_SERVEUR')
 
 def play_sound(string):
     pygame.mixer.music.load(string) 
     pygame.mixer.music.play()  
-
 
 def assistant_voice(output):
     if output!= None:
@@ -21,7 +24,7 @@ def assistant_voice(output):
         print("A.I : " + output)
         voice.say(output)
         voice.runAndWait()
-        
+     
 def internet():
     try:
         urlopen('https://www.google.com', timeout=1)
@@ -31,7 +34,55 @@ def internet():
         print("Déconnecté")
         return False
 
+# Fonction pour ping l'URL
+def ping_server():
+    global ping_active
+    while ping_active:
+        try:
+            ping_command = get_ping_command()
+            output = subprocess.run(ping_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if output.returncode != 0:    
+                assistant_voice("Le serveur est down")
+                stop_server_verification()
+            else:
+                assistant_voice("Le serveur est up")
+                check_server_in_background()
+        except Exception as e:
+            assistant_voice(f"Erreur lors du ping : {e}")
+        
+        time.sleep(30)  # Attendre 30 secondes avant de réessayer
 
+# Fonction pour adapter la commande de ping selon le système d'exploitation
+def get_ping_command():
+    system = platform.system()
+    if system == "Windows":
+        return ["ping", "-n", "1", URL_SERVEUR]
+    elif system == "Linux" or system == "Darwin":  # macOS est "Darwin"
+        return ["ping", "-c", "1", URL_SERVEUR]
+    else:
+        raise Exception(f"Système d'exploitation non pris en charge : {system}")
+
+# Thread de vérification du serveur
+def check_server_in_background():
+    global ping_active
+    if not ping_active:
+        ping_active = True  # Activer le thread de ping
+        # Créer un thread séparé pour exécuter le ping en arrière-plan
+        thread = threading.Thread(target=ping_server)
+        thread.daemon = True  # Permet au thread de s'arrêter quand le programme principal se termine
+        thread.start()
+        assistant_voice("La vérification du serveur a commencé.")
+    else:
+        assistant_voice("La vérification du serveur est déjà en cours.")
+
+# Fonction pour arrêter la vérification du serveur
+def stop_server_verification():
+    global ping_active
+    if ping_active:
+        ping_active = False  # Désactiver le thread de ping
+        assistant_voice("La vérification du serveur a été arrêtée.")
+    else:
+        assistant_voice("La vérification du serveur n'est pas en cours.")
 
 def recognition(active):
     r = sr.Recognizer()
@@ -122,6 +173,8 @@ def main():
     close = ["arrête-toi"]
     open = ["ouvre", "ouvrir"]        
     script = ["exécute le script", "lance le script", "exécute le programme", "lance le programme"] 
+    state_server_start = ["vérifie l'état du serveur", "vérifier l'état du serveur"]  
+    state_server_off = ["arrête de vérifier l'état du serveur", "arrête de ping le serveur"]  
 
     active = False  
     while True:
@@ -146,6 +199,14 @@ def main():
                         if script_name:
                             script_name = script_name + ".py"  # Ajouter l'extension .py au nom du script
                             execute_script(script_name)
+                        break
+                for x in state_server_start:
+                    if x in input.lower():
+                        check_server_in_background()
+                        break
+                for x in state_server_off:
+                    if x in input.lower():
+                        stop_server_verification()
                         break
 
 
