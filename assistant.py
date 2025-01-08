@@ -12,6 +12,7 @@ import pygame
 import pythoncom
 import paramiko
 import requests
+import re
 
 
 # Charger les variables d'environnement du fichier .env
@@ -401,6 +402,71 @@ def git_interaction():
     assistant_voice(message_pull_request)
     print(message_pull_request)
 
+def check_mergeable(pr):
+    mergeable_url = f'{url}/{pr}'
+    response = requests.get(mergeable_url, headers=headers)
+    if(response.status_code == 200):
+        return response.json().get('mergeable')
+    return False
+
+def get_pull_request_by_number(number):
+    pull_requests = get_pull_requests()
+    if number >= len(pull_requests):  # Vérifie si l'index est valide
+        return False
+    return pull_requests[number]
+
+def check_mergeable_interaction(entree):
+    number = extract_number(entree)
+    if number == None:
+        print(f"Indiquez un index de pull request.")
+        assistant_voice(f"Indiquez un index de pull request.")
+        return
+    pull_request = get_pull_request_by_number(number - 1)
+    if pull_request == False:
+        print(f"L'index fournis ne correspond a aucune pull request.")
+        assistant_voice(f"L'index fournis ne correspond a aucune pull request.")
+        return
+    is_mergable = check_mergeable(pull_request["number"])
+    if is_mergable == True:
+         print(f"Cette pull request est fusionnable avec main.")
+         assistant_voice(f"Cette pull request est fusionnable avec main.")
+    else:
+        print(f"Cette pull request n'est pas fusionnable avec main ou n'existe pas.")
+        assistant_voice(f"Cette pull request n'est pas fusionnable avec main ou n'existe pas.")
+
+def extract_number(texte):
+    if 'un' in texte.lower():
+        return 1
+    match = re.search(r'\d+', texte)
+    return int(match.group())if match else None
+
+def merge_pull_request(entree):
+    number = extract_number(entree)
+    if number == None:
+        print(f"Indiquez un index de pull request.")
+        assistant_voice(f"Indiquez un index de pull request.")
+        return
+    pull_request = get_pull_request_by_number(number - 1)
+    if pull_request == False:
+        print(f"L'index fournis ne correspond a aucune pull request.")
+        assistant_voice(f"L'index fournis ne correspond a aucune pull request.")
+        return
+    is_mergable = check_mergeable(pull_request["number"])
+    if is_mergable == True:
+        merge_url = f"{pull_request['url']}/merge"
+        response = requests.put(merge_url, headers=headers)
+        if response.status_code == 200:
+            print(f"Pull request #{pull_request['number']} fusionnée avec succès.")
+            assistant_voice(f"Pull request #{pull_request['number']} fusionnée avec succès.")
+        else:
+            print(f"Erreur lors de la fusion de la pull request #{pull_request['number']} : {response.status_code} {response.text}")
+            assistant_voice(f"Erreur lors de la fusion de la pull request #{pull_request['number']}")
+    else:
+        print(f"Cette pull request n'est pas fusionnable avec main ou n'existe pas.")
+        assistant_voice(f"Cette pull request n'est pas fusionnable avec main ou n'existe pas.")
+
+
+
 def main():
     assistant_voice("Dîtes 'bonjour' pour activer mes services.")
     trigger_word = "bonjour"  # Le mot clé pour activer l'assistant
@@ -418,7 +484,8 @@ def main():
     apache_ok = ["vérifie si le serveur apache est ok", "est-ce que le serveur apache tourne correctement"]
     ia_answer_logs = ["analyse les logs"]
     ask_pr = ["montre-moi les pull request", "y'as-t-il de nouvelles pull request sur mon projet"]
-
+    is_mergeable_pr = ["fusionnable", "réunir", "combinable", "combiner"]  
+    merge_pr = ["fusionner"]
     
     while True:
         entree = reconnaissance(active)  # On écoute l'utilisateur
@@ -481,6 +548,14 @@ def main():
                 for x in ia_answer_logs:
                     if x in entree.lower():
                         analyse_logs()
+                        break
+                for x in is_mergeable_pr:
+                    if x in entree.lower():
+                        check_mergeable_interaction(entree)
+                        break
+                for x in merge_pr:
+                    if x in entree.lower():
+                        merge_pull_request(entree)
                         break
                 for x in ask_pr:
                     if x in entree.lower():
