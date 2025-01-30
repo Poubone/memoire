@@ -23,7 +23,7 @@ cd assistant-vocal
 Utilisez `pip` pour installer les bibliothèques Python nécessaires. Exécutez la commande suivante dans le répertoire du projet :
 
 ```bash
-pip install SpeechRecognition pyttsx3 huggingface-hub python-dotenv pygame pywin32 pyaudio requests paramiko
+pip install SpeechRecognition pyttsx3 huggingface-hub python-dotenv pygame pywin32
 ```
 
 ### 4. Installation des bibliothèques système requises
@@ -68,7 +68,6 @@ python assistant.py
 
 Pour arrêter l'assistant, vous pouvez dire :
 - "arrête-toi"
-- "tais-toi"
 
 ## Dépendances
 
@@ -80,6 +79,7 @@ Voici les principales bibliothèques utilisées dans ce projet :
 - `python-dotenv` : Pour charger les variables d'environnement à partir d'un fichier `.env`.
 - `pygame` : Pour jouer des sons.
 - `pywin32` : Pour exécuter des commandes système sur Windows.
+- `paramiko` : Pour réaliser des connexions SSH
 
 ### 5. Configuration de l'API OpenAI
 
