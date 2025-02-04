@@ -12,6 +12,10 @@ import pygame
 import pythoncom
 import paramiko
 import requests
+import re
+from pystray import Icon, MenuItem, Menu
+from PIL import Image
+import sys
 
 
 # Charger les variables d'environnement du fichier .env
@@ -30,6 +34,22 @@ ping_active = False
 
 # Ajout d'un verrou pour les appels à pyttsx3 (le moteur vocal)
 voice_lock = threading.Lock()
+
+def quit_app(icon, item):
+    """Quitte l'application proprement."""
+    print("Fermeture de l'application.")
+    icon.stop()
+    sys.exit()
+
+def create_image():
+    """Créer l'icône (remplacez avec votre propre icône)."""
+    return Image.open("icon.ico")
+
+# Fonction pour démarrer l'icône dans la barre des tâches
+def start_icon():
+    menu = Menu(MenuItem('Quitter', quit_app))
+    icon = Icon("MonApp", create_image(), "Compilotte", menu)
+    icon.run()  # Démarre l'icône dans la barre des tâches
 
 def jouer_son(string):
     pygame.mixer.music.load(string)  # Charger le fichier audio
@@ -453,6 +473,8 @@ def main():
                         break
                     
 
-# Démarrage du programme
-if __name__ == '__main__':
-    main()
+# Lancer `main()` dans un thread séparé
+threading.Thread(target=main, daemon=True).start()
+
+# Lancer l'icône dans la barre des tâches
+start_icon()
